@@ -1,6 +1,6 @@
 # Projet DMC
 
-**Auteur :** BraKann
+**Auteur :** Christopher Chiaberge -  groupe 2C - M1ALMA
 **Date :** 2025-11-21
 
 ## URL Cloud 
