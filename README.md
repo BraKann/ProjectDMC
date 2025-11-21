@@ -164,7 +164,7 @@ hey -t 0 -n 500 -c <concurrence> https://projetdmc.ew.r.appspot.com/timeline?use
 | 1000  | -1       | 2   | 0      |
 | 1000  | -1       | 3   | 0      |
 
-### 6.6 5ème essai avec `hey` et n = c
+### 6.6 5ème essai avec `hey` et n = c (concluant)
 
 ```bash
 hey -t 0 -n <concurrence> -c <concurrence> https://projetdmc.ew.r.appspot.com/timeline?user_id=1
@@ -254,4 +254,4 @@ print("Barplot sauvegardé dans ../out/barplot_conc.png")
 plt.show()
 ```
 
-![Temps moyen par requête selon la concurrence](../out/barplot_conc.png)
+![Temps moyen par requête selon la concurrence](out/barplot_conc.png)
