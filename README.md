@@ -1,4 +1,4 @@
-# Projet DMC - Guide d'installation et Benchmark
+# Projet DMC
 
 **Auteur :** BraKann
 **Date :** 2025-11-21
@@ -135,7 +135,7 @@ hey -t 0 -n 200 -c <concurrence> https://projetdmc.ew.r.appspot.com/timeline?use
 | 1000  | -1       | 2   | 0      |
 | 1000  | -1       | 3   | 0      |
 
-> Remarque : problème toujours pour 1000 concurrents.
+> Remarque : problème pour 1000 concurrents.
 
 ### 6.5 4ème essai avec `hey` et n = 500
 
@@ -163,6 +163,8 @@ hey -t 0 -n 500 -c <concurrence> https://projetdmc.ew.r.appspot.com/timeline?use
 | 1000  | -1       | 1   | 0      |
 | 1000  | -1       | 2   | 0      |
 | 1000  | -1       | 3   | 0      |
+
+> Remarque : Encore un problème pour 1000 concurrents.
 
 ### 6.6 5ème essai avec `hey` et n = c (concluant)
 
@@ -215,8 +217,8 @@ print(f"{len(users)} users supprimés.")
 ## 8. Analyse des performances
 
 * Temps moyen par requête pour différentes concurrences : 1, 10, 20, 50, 100, 1000.
-* Problème pour 1000 utilisateurs : temps trop long.
-* Conseil : recréer la base de données avec les index corrects pour de meilleurs temps.
+* ![Temps moyen par requête selon la concurrence](out/barplot_conc.png)
+
 
 ## 9. Création de barplots
 
@@ -254,4 +256,3 @@ print("Barplot sauvegardé dans ../out/barplot_conc.png")
 plt.show()
 ```
 
-![Temps moyen par requête selon la concurrence](out/barplot_conc.png)
