@@ -7,7 +7,7 @@
 
 * Créer un projet Google Cloud Platform.
 * Créer un projet GitHub.
-* Créer un Codespace et cloner le projet du professeur : [https://github.com/momo54/massive-gcp](https://github.com/momo54/massive-gcp)
+* Créer un Codespace et cloner le projet : [https://github.com/momo54/massive-gcp](https://github.com/momo54/massive-gcp)
 
 ## 2. Installation des dépendances
 
