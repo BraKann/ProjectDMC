@@ -1,0 +1,15 @@
+# Fichiers temporaires Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environnements virtuels
+venv/
+.env/
+.env.local
+
+# Fichiers de données volumineux
+google-cloud-sdk/
+google-cloud-cli-*.tar.gz
+
