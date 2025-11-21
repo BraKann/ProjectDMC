@@ -18,10 +18,10 @@ pip install -r requirements.txt
 ## 3. Configuration GCP
 
 ```bash
-gcloud config set project <ton-projet-id>
+gcloud config set project <id>
 gcloud app create --region=europe-west1
 gcloud init
-gcloud config set project <ton-project-id>
+gcloud config set project <id>
 # Si problème de connexion
 gcloud auth login
 ```
