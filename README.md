@@ -59,7 +59,7 @@ python seed.py --users 1000 --posts 50 --follows-min 20 --follows-max 20
 
 ## 6. Benchmark utilisateurs simultanés
 
-* Test initial avec ApacheBench (ab) :
+### 6.1 Test initial avec ApacheBench (ab)
 
 ```console
 ab -n 100 -c 1 https://projetdmc.ew.r.appspot.com/timeline?user_id=1
@@ -70,7 +70,7 @@ Time per request: 626.388 ms (mean)
 
 > Remarque : beaucoup de requêtes échouent à forte concurrence.
 
-* 1er essai :
+### 6.2 1er essai avec `ab` et n = 1
 
 ```bash
 ab -n 1 -c 1 https://projetdmc.ew.r.appspot.com/timeline?user_id=1le
@@ -83,7 +83,7 @@ ab -n 1 -c 1000 https://projetdmc.ew.r.appspot.com/timeline?user_id=1le
 
 > Remarque : mauvaise configuration car `n = 1`.
 
-* 2ème essai (avec `ab` et `n = 200`) :
+### 6.3 2ème essai avec `ab` et n = 200
 
 | PARAM | AVG_TIME | RUN | FAILED |
 | ----- | -------- | --- | ------ |
@@ -106,15 +106,71 @@ ab -n 1 -c 1000 https://projetdmc.ew.r.appspot.com/timeline?user_id=1le
 | 1000  | -1       | 2   | 0      |
 | 1000  | -1       | 3   | 0      |
 
-> Remarque : trop de requêtes échouent. Solutions possibles : vider le Datastore, remplacer `ab` par `hey`, utiliser `-t 0` pour désactiver le timeout.
+> Remarque : trop de requêtes échouent à chaque fois. Solutions : vider le Datastore, changer `ab` par `hey`, utiliser `-t 0` pour désactiver le timeout.
 
-* Test avec `hey` (plus fiable) :
+### 6.4 3ème essai avec `hey` et n = 200
 
 ```bash
 hey -t 0 -n 200 -c <concurrence> https://projetdmc.ew.r.appspot.com/timeline?user_id=1
 ```
 
-Exemple de résultats extraits du CSV `conc.csv` :
+| PARAM | AVG_TIME | RUN | FAILED |
+| ----- | -------- | --- | ------ |
+| 1     | 341.9    | 1   | 0      |
+| 1     | 387.5    | 2   | 0      |
+| 1     | 377.0    | 3   | 0      |
+| 10    | 934.5    | 1   | 0      |
+| 10    | 847.9    | 2   | 0      |
+| 10    | 986.7    | 3   | 0      |
+| 20    | 1097.7   | 1   | 0      |
+| 20    | 1065.4   | 2   | 0      |
+| 20    | 1109.3   | 3   | 0      |
+| 50    | 1259.3   | 1   | 0      |
+| 50    | 1135.0   | 2   | 0      |
+| 50    | 1195.9   | 3   | 0      |
+| 100   | 1876.5   | 1   | 0      |
+| 100   | 2162.6   | 2   | 0      |
+| 100   | 1676.0   | 3   | 0      |
+| 1000  | -1       | 1   | 0      |
+| 1000  | -1       | 2   | 0      |
+| 1000  | -1       | 3   | 0      |
+
+> Remarque : problème toujours pour 1000 concurrents.
+
+### 6.5 4ème essai avec `hey` et n = 500
+
+```bash
+hey -t 0 -n 500 -c <concurrence> https://projetdmc.ew.r.appspot.com/timeline?user_id=1
+```
+
+| PARAM | AVG_TIME | RUN | FAILED |
+| ----- | -------- | --- | ------ |
+| 1     | 410.8    | 1   | 0      |
+| 1     | 380.4    | 2   | 0      |
+| 1     | 372.4    | 3   | 0      |
+| 10    | 972.7    | 1   | 0      |
+| 10    | 932.5    | 2   | 0      |
+| 10    | 993.7    | 3   | 0      |
+| 20    | 1142.5   | 1   | 0      |
+| 20    | 1352.7   | 2   | 0      |
+| 20    | 1325.5   | 3   | 0      |
+| 50    | 1870.3   | 1   | 0      |
+| 50    | 1604.8   | 2   | 0      |
+| 50    | 2033.5   | 3   | 0      |
+| 100   | 2602.1   | 1   | 0      |
+| 100   | 2126.8   | 2   | 0      |
+| 100   | 1719.9   | 3   | 0      |
+| 1000  | -1       | 1   | 0      |
+| 1000  | -1       | 2   | 0      |
+| 1000  | -1       | 3   | 0      |
+
+### 6.6 5ème essai avec `hey` et n = c
+
+```bash
+hey -t 0 -n <concurrence> -c <concurrence> https://projetdmc.ew.r.appspot.com/timeline?user_id=1
+```
+
+> Exemple de sorties extraites du CSV `conc.csv` :
 
 | PARAM | AVG_TIME (ms) | RUN | FAILED |
 | ----- | ------------- | --- | ------ |
@@ -197,7 +253,5 @@ print("Barplot sauvegardé dans ../out/barplot_conc.png")
 # Afficher le graphique
 plt.show()
 ```
-
-Le barplot est sauvegardé dans `../out/barplot_conc.png` et peut être affiché dans le README avec :
 
 ![Temps moyen par requête selon la concurrence](../out/barplot_conc.png)
