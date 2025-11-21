@@ -40,6 +40,7 @@ gcloud app deploy
 python seed.py --users 5 --posts 1 --follows-min 1 --follows-max 3
 ```
 
+## 5. Test de seed.py
 * Initialisation complète :
 
 ```bash
@@ -57,7 +58,7 @@ python seed.py --users 1000 --posts 50 --follows-min 20 --follows-max 20
 [Seed] Terminé.
 ```
 
-## 6. Benchmark utilisateurs simultanés
+## 6. Passage à l’échelle sur la charge 
 
 ### 6.1 Test initial avec ApacheBench (ab)
 
@@ -219,35 +220,170 @@ print(f"{len(users)} users supprimés.")
 * Temps moyen par requête pour différentes concurrences : 1, 10, 20, 50, 100, 1000.
 * ![Temps moyen par requête selon la concurrence](out/barplot_conc.png)
 
+## 10. Passage à l’échelle sur taille des données
 
-## 9. Création de barplots
+### 10.1 Variation du nombre de posts par utilisateur
+
+* Fixer le nombre de followers à 20.
+* Faire varier le nombre de posts : 10, 100, 1000.
+
+**Nettoyage du Datastore :**
+
+```bash
+python deleteDS.py
+```
+
+**Repeuplement :**
+
+```bash
+python seed.py --users 21 --posts 1000 --follows-min 20 --follows-max 20
+```
+
+**Script de benchmark :**
+
+```python
+import subprocess
+import csv
+import re
+
+URL = "https://projetdmc.ew.r.appspot.com/api/timeline?user=user1"
+OUTPUT_FILE = "../out/post.csv"
+POST_LEVELS = [10, 100, 1000]
+N_REQUESTS = 200
+CONCURRENCY = 50
+
+def run_hey(n, c):
+    cmd = ["hey", "-t", "0", "-n", str(n), "-c", str(c), URL]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    out = result.stdout
+    match_time = re.search(r"Average:\s+([\d\.]+)\s*(ms|s|µs)", out)
+    avg = float(match_time.group(1)) * (1000 if match_time.group(2) == "s" else 1) if match_time else -1
+    match_fail = re.search(r"(\d+)\s+failed", out)
+    failed = int(match_fail.group(1)) if match_fail else 0
+    return avg, failed
+
+with open(OUTPUT_FILE, "w", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerow(["POSTS_PER_USER", "AVG_TIME", "RUN", "FAILED"])
+    for posts in POST_LEVELS:
+        for run in range(1, 4):
+            avg, failed = run_hey(N_REQUESTS, CONCURRENCY)
+            writer.writerow([posts, avg, run, failed])
+```
+
+**Exemple de résultats :**
+
+| POSTS_PER_USER | AVG_TIME (ms) | RUN | FAILED |
+| -------------- | ------------- | --- | ------ |
+| 10             | 1843.7        | 1   | 0      |
+| 10             | 1408.8        | 2   | 0      |
+| 10             | 2008.2        | 3   | 0      |
+| 100            | 1703.3        | 1   | 0      |
+| 100            | 1354.3        | 2   | 0      |
+| 100            | 1661.0        | 3   | 0      |
+| 1000           | 1646.0        | 1   | 0      |
+| 1000           | 2188.0        | 2   | 0      |
+| 1000           | 1425.7        | 3   | 0      |
+
+
+![Temps moyen par requête selon le nb de post](out/barplot_post.png)
+---
+
+### 10.2 Variation du nombre de followee
+
+* Fixer le nombre de posts par utilisateur à 100.
+* Faire varier le nombre de followee : 10, 50, 100.
+
+**Nettoyage du Datastore :**
+
+```bash
+python deleteDS.py
+```
+
+**Repeuplement :**
+
+```bash
+python seed.py --users 101 --posts 100 --follows-min 100 --follows-max 100
+```
+
+**Script de benchmark :**
+
+```python
+import subprocess
+import csv
+import re
+
+URL = "https://projetdmc.ew.r.appspot.com/api/timeline?user=user1"
+OUTPUT_FILE = "../out/fanout.csv"
+FANOUT_LEVELS = [10, 50, 100]
+N_REQUESTS = 200
+CONCURRENCY = 50
+
+def run_hey(n, c):
+    cmd = ["hey", "-t", "0", "-n", str(n), "-c", str(c), URL]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    out = result.stdout
+    match_time = re.search(r"Average:\s+([\d\.]+)\s*(ms|s|µs)", out)
+    avg = float(match_time.group(1)) * (1000 if match_time.group(2) == "s" else 1) if match_time else -1
+    match_fail = re.search(r"(\d+)\s+failed", out)
+    failed = int(match_fail.group(1)) if match_fail else 0
+    return avg, failed
+
+with open(OUTPUT_FILE, "w", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerow(["FANOUT", "AVG_TIME", "RUN", "FAILED"])
+    for fanout in FANOUT_LEVELS:
+        for run in range(1, 3):
+            avg, failed = run_hey(N_REQUESTS, CONCURRENCY)
+            writer.writerow([fanout, avg, run, failed])
+```
+
+**Exemple de résultats :**
+
+| FANOUT | AVG_TIME (ms) | RUN | FAILED |
+| ------ | ------------- | --- | ------ |
+| 10     | 1688.4        | 1   | 0      |
+| 10     | 1315.8        | 2   | 0      |
+| 50     | 1475.0        | 1   | 0      |
+| 50     | 1441.9        | 2   | 0      |
+| 100    | 1812.7        | 1   | 0      |
+| 100    | 1658.2        | 2   | 0      |
+
+
+![Temps moyen par requête selon le nb de post](out/barplot_fanout.png)
+
+## 11. Création de barplots
 
 ```python
 import pandas as pd
 import matplotlib.pyplot as plt
 
 # Lecture des données
-#data = pd.read_csv("../outfanout.csv")  
-#data = pd.read_csv("../outpost.csv")
-data = pd.read_csv("../out/conc.csv")  
+#data = pd.read_csv("../out/conc.csv")  
+#data = pd.read_csv("../out/post.csv")
+data = pd.read_csv("../out/fanout.csv")  
 
 # Convertir le temps en float et en secondes (si les temps sont en ms)
 data['AVG_TIME'] = data['AVG_TIME'].astype(float) / 1000  # division par 1000 pour passer en secondes
 
 # Calculer la moyenne et la variance pour chaque PARAM
-stats = data.groupby('PARAM')['AVG_TIME'].agg(['mean', 'std']).reset_index()
+#stats = data.groupby('PARAM')['AVG_TIME'].agg(['mean', 'std']).reset_index()
+#stats = data.groupby('POSTS_PER_USER')['AVG_TIME'].agg(['mean', 'std']).reset_index()
+stats = data.groupby('FANOUT')['AVG_TIME'].agg(['mean', 'std']).reset_index()
 
 # Création du barplot
 plt.figure(figsize=(8,5))
-bars = plt.bar(stats['PARAM'].astype(str), stats['mean'], yerr=stats['std'], capsize=5, color='cornflowerblue')
+#bars = plt.bar(stats['PARAM'].astype(str), stats['mean'], yerr=stats['std'], capsize=5, color='cornflowerblue')
+#bars = plt.bar(stats['POSTS_PER_USER'].astype(str), stats['mean'], yerr=stats['std'], capsize=5, color='cornflowerblue')
+bars = plt.bar(stats['FANOUT'].astype(str), stats['mean'], yerr=stats['std'], capsize=5, color='cornflowerblue')
 
 # Étiquettes et titre
-plt.xlabel("Nombre d'utilisateurs concurrents")
+#plt.xlabel("Nombre d'utilisateurs concurrents")
 #plt.xlabel("Nombre de post par user")
-#plt.xlabel("Nombre de followee")
+plt.xlabel("Nombre de followee")
 plt.ylabel("Temps moyen par requête (s)")
-#plt.title("Temps moyen par requête selon la taille des données")
-#plt.title("Temps moyen par requête selon le nombre de followee")
+#plt.title("Temps moyen par requête selon la taille du nombre de posts par user")
+plt.title("Temps moyen par requête selon le nombre de followee")
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 
 # Affichage des valeurs exactes au-dessus des barres
@@ -255,11 +391,12 @@ for bar, mean in zip(bars, stats['mean']):
     plt.text(bar.get_x() + bar.get_width()/2, mean + stats['std'].max()*0.05, f"{mean:.2f}", ha='center', va='bottom', fontsize=9)
 
 # Sauvegarde automatique du barplot
-plt.savefig("../out/barplot_conc.png", bbox_inches='tight')
-print("Barplot sauvegardé dans ../out/barplot_conc.png")
+#plt.savefig("../out/barplot_conc.png", bbox_inches='tight')
+#plt.savefig("../out/barplot_post.png", bbox_inches='tight')
+plt.savefig("../out/barplot_fanout.png", bbox_inches='tight')
+print("Barplot sauvegardé dans ../out")
 
 # Afficher le graphique
 plt.show()
-
 ```
 
