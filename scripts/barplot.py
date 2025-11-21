@@ -2,9 +2,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Lecture des données
-#data = pd.read_csv("conc.csv")  # Remplace "data.csv" par le nom de ton fichier
-#data = pd.read_csv("post.csv")
-data = pd.read_csv("../out/conc.csv")  # CSV utilisé actuellement
+#data = pd.read_csv("../outfanout.csv")  
+#data = pd.read_csv("../outpost.csv")
+data = pd.read_csv("../out/conc.csv")  
 
 # Convertir le temps en float et en secondes (si les temps sont en ms)
 data['AVG_TIME'] = data['AVG_TIME'].astype(float) / 1000  # division par 1000 pour passer en secondes
