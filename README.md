@@ -227,7 +227,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Lecture des données
-#data = pd.read_csv("conc.csv")  # Remplace "data.csv" par le nom de ton fichier
+#data = pd.read_csv("conc.csv") 
 #data = pd.read_csv("post.csv")
 data = pd.read_csv("../out/conc.csv")  # CSV utilisé actuellement
 
