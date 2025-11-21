@@ -227,10 +227,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Lecture des données
-data = pd.read_csv("../out/conc.csv")  # CSV utilisé
+#data = pd.read_csv("conc.csv")  # Remplace "data.csv" par le nom de ton fichier
+#data = pd.read_csv("post.csv")
+data = pd.read_csv("../out/conc.csv")  # CSV utilisé actuellement
 
-# Convertir le temps en float et en secondes
-data['AVG_TIME'] = data['AVG_TIME'].astype(float) / 1000
+# Convertir le temps en float et en secondes (si les temps sont en ms)
+data['AVG_TIME'] = data['AVG_TIME'].astype(float) / 1000  # division par 1000 pour passer en secondes
 
 # Calculer la moyenne et la variance pour chaque PARAM
 stats = data.groupby('PARAM')['AVG_TIME'].agg(['mean', 'std']).reset_index()
@@ -241,7 +243,11 @@ bars = plt.bar(stats['PARAM'].astype(str), stats['mean'], yerr=stats['std'], cap
 
 # Étiquettes et titre
 plt.xlabel("Nombre d'utilisateurs concurrents")
+#plt.xlabel("Nombre de post par user")
+#plt.xlabel("Nombre de followee")
 plt.ylabel("Temps moyen par requête (s)")
+#plt.title("Temps moyen par requête selon la taille des données")
+#plt.title("Temps moyen par requête selon le nombre de followee")
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 
 # Affichage des valeurs exactes au-dessus des barres
