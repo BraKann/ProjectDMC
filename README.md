@@ -42,14 +42,14 @@ gcloud app deploy
 * Test rapide :
 
 ```bash
-python seed.py --users 5 --posts 1 --follows-min 1 --follows-max 3
+python seedV2.py --users 5 --posts 1 --follows-min 1 --follows-max 3
 ```
 
 ## 5. Test de seed.py
 * Initialisation complète :
 
 ```bash
-python seed.py --users 1000 --posts 50 --follows-min 20 --follows-max 20
+python seedV2.py --users 1000 --posts 50 --follows-min 20 --follows-max 20
 ```
 
 * Exemple de sortie terminal pour 1000 utilisateurs :
@@ -65,143 +65,36 @@ python seed.py --users 1000 --posts 50 --follows-min 20 --follows-max 20
 
 ## 6. Passage à l’échelle sur la charge 
 
-### 6.1 Test initial avec ApacheBench (ab)
+Configuration fixe :
 
-```console
-ab -n 100 -c 1 https://projetdmc.ew.r.appspot.com/timeline?user_id=1
-Failed requests: 50
-Requests per second: 1.60 [#/sec] (mean)
-Time per request: 626.388 ms (mean)
-```
+1000 users
 
-> Remarque : beaucoup de requêtes échouent à forte concurrence.
+50 posts/user
 
-### 6.2 1er essai avec `ab` et n = 1
+20 followees/user
 
-```bash
-ab -n 1 -c 1 https://projetdmc.ew.r.appspot.com/timeline?user_id=1le
-ab -n 1 -c 10 https://projetdmc.ew.r.appspot.com/timeline?user_id=1le
-ab -n 1 -c 20 https://projetdmc.ew.r.appspot.com/timeline?user_id=1le
-ab -n 1 -c 50 https://projetdmc.ew.r.appspot.com/timeline?user_id=1le
-ab -n 1 -c 100 https://projetdmc.ew.r.appspot.com/timeline?user_id=1le
-ab -n 1 -c 1000 https://projetdmc.ew.r.appspot.com/timeline?user_id=1le
-```
+On varie le nombre de requêtes timeline simultanées :
+1, 10, 20, 50, 100, 1000
 
-> Remarque : mauvaise configuration car `n = 1`.
+3 runs par valeur
 
-### 6.3 2ème essai avec `ab` et n = 200
+Mesure : temps moyen d’une requête timeline (ms)
 
-| PARAM | AVG_TIME | RUN | FAILED |
-| ----- | -------- | --- | ------ |
-| 1     | 605.26   | 1   | 104    |
-| 1     | 602.015  | 2   | 104    |
-| 1     | 581.736  | 3   | 108    |
-| 10    | 1330.511 | 1   | 73     |
-| 10    | 1182.568 | 2   | 94     |
-| 10    | 1338.48  | 3   | 89     |
-| 20    | 1478.109 | 1   | 171    |
-| 20    | 1437.534 | 2   | 143    |
-| 20    | 1302.455 | 3   | 164    |
-| 50    | 1754.616 | 1   | 124    |
-| 50    | 2112.851 | 2   | 150    |
-| 50    | 2154.022 | 3   | 160    |
-| 100   | 4127.676 | 1   | 156    |
-| 100   | 3252.945 | 2   | 186    |
-| 100   | 2983.528 | 3   | 193    |
-| 1000  | -1       | 1   | 0      |
-| 1000  | -1       | 2   | 0      |
-| 1000  | -1       | 3   | 0      |
+Si une requête échoue → FAILED = 1
 
-> Remarque : trop de requêtes échouent à chaque fois. Solutions : vider le Datastore, changer `ab` par `hey`, utiliser `-t 0` pour désactiver le timeout.
+Attendu : voir si la webapp tient la montée en charge.
+Le temps devrait augmenter progressivement, sans exploser, et sans erreurs.
 
-### 6.4 3ème essai avec `hey` et n = 200
 
-```bash
-hey -t 0 -n 200 -c <concurrence> https://projetdmc.ew.r.appspot.com/timeline?user_id=1
-```
+## Analyse des performances
 
-| PARAM | AVG_TIME | RUN | FAILED |
-| ----- | -------- | --- | ------ |
-| 1     | 341.9    | 1   | 0      |
-| 1     | 387.5    | 2   | 0      |
-| 1     | 377.0    | 3   | 0      |
-| 10    | 934.5    | 1   | 0      |
-| 10    | 847.9    | 2   | 0      |
-| 10    | 986.7    | 3   | 0      |
-| 20    | 1097.7   | 1   | 0      |
-| 20    | 1065.4   | 2   | 0      |
-| 20    | 1109.3   | 3   | 0      |
-| 50    | 1259.3   | 1   | 0      |
-| 50    | 1135.0   | 2   | 0      |
-| 50    | 1195.9   | 3   | 0      |
-| 100   | 1876.5   | 1   | 0      |
-| 100   | 2162.6   | 2   | 0      |
-| 100   | 1676.0   | 3   | 0      |
-| 1000  | -1       | 1   | 0      |
-| 1000  | -1       | 2   | 0      |
-| 1000  | -1       | 3   | 0      |
+TinyInsta ne scale PAS en charge.
+Il supporte 20–30 utilisateurs simultanés, au-delà : timeout et erreurs
 
-> Remarque : problème pour 1000 concurrents.
+* Temps moyen par requête pour différentes concurrences : 1, 10, 20, 50, 100, 1000.
+* ![Temps moyen par requête selon la concurrence](out/barplot_conc.png)
 
-### 6.5 4ème essai avec `hey` et n = 500
-
-```bash
-hey -t 0 -n 500 -c <concurrence> https://projetdmc.ew.r.appspot.com/timeline?user_id=1
-```
-
-| PARAM | AVG_TIME | RUN | FAILED |
-| ----- | -------- | --- | ------ |
-| 1     | 410.8    | 1   | 0      |
-| 1     | 380.4    | 2   | 0      |
-| 1     | 372.4    | 3   | 0      |
-| 10    | 972.7    | 1   | 0      |
-| 10    | 932.5    | 2   | 0      |
-| 10    | 993.7    | 3   | 0      |
-| 20    | 1142.5   | 1   | 0      |
-| 20    | 1352.7   | 2   | 0      |
-| 20    | 1325.5   | 3   | 0      |
-| 50    | 1870.3   | 1   | 0      |
-| 50    | 1604.8   | 2   | 0      |
-| 50    | 2033.5   | 3   | 0      |
-| 100   | 2602.1   | 1   | 0      |
-| 100   | 2126.8   | 2   | 0      |
-| 100   | 1719.9   | 3   | 0      |
-| 1000  | -1       | 1   | 0      |
-| 1000  | -1       | 2   | 0      |
-| 1000  | -1       | 3   | 0      |
-
-> Remarque : Encore un problème pour 1000 concurrents.
-
-### 6.6 5ème essai avec `hey` et n = c (concluant)
-
-```bash
-hey -t 0 -n <concurrence> -c <concurrence> https://projetdmc.ew.r.appspot.com/timeline?user_id=1
-```
-
-> Exemple de sorties extraites du CSV `conc.csv` :
-
-| PARAM | AVG_TIME (ms) | RUN | FAILED |
-| ----- | ------------- | --- | ------ |
-| 1     | 410.8         | 1   | 0      |
-| 1     | 380.4         | 2   | 0      |
-| 1     | 372.4         | 3   | 0      |
-| 10    | 972.7         | 1   | 0      |
-| 10    | 932.5         | 2   | 0      |
-| 10    | 993.7         | 3   | 0      |
-| 20    | 1142.5        | 1   | 0      |
-| 20    | 1352.7        | 2   | 0      |
-| 20    | 1325.5        | 3   | 0      |
-| 50    | 1870.3        | 1   | 0      |
-| 50    | 1604.8        | 2   | 0      |
-| 50    | 2033.5        | 3   | 0      |
-| 100   | 2602.1        | 1   | 0      |
-| 100   | 2126.8        | 2   | 0      |
-| 100   | 1719.9        | 3   | 0      |
-| 1000  | 9288.1        | 1   | 0      |
-| 1000  | 14375.6       | 2   | 0      |
-| 1000  | 21979.4       | 3   | 0      |
-
-## 7. Nettoyage du Datastore avant test
+## Nettoyage du Datastore avant test
 
 ```python
 from google.cloud import datastore
@@ -220,19 +113,14 @@ print(f"{len(posts)} posts supprimés.")
 print(f"{len(users)} users supprimés.")
 ```
 
-## 8. Analyse des performances
+## Passage à l’échelle sur taille des données
 
-* Temps moyen par requête pour différentes concurrences : 1, 10, 20, 50, 100, 1000.
-* ![Temps moyen par requête selon la concurrence](out/barplot_conc.png)
-
-## 10. Passage à l’échelle sur taille des données
-
-### 10.1 Variation du nombre de posts par utilisateur
+### Variation du nombre de posts par utilisateur
 
 * Fixer le nombre de followers à 20.
 * Faire varier le nombre de posts : 10, 100, 1000.
 
-**Nettoyage du Datastore :**
+**Nettoyage du Datastore entre chaque requetes :**
 
 ```bash
 python deleteDS.py
@@ -241,60 +129,16 @@ python deleteDS.py
 **Repeuplement :**
 
 ```bash
-python seed.py --users 21 --posts 1000 --follows-min 20 --follows-max 20
+python seed.py --users 1000 --posts [nb-post] --follows-min 20 --follows-max 20
 ```
 
-**Script de benchmark :**
-
-```python
-import subprocess
-import csv
-import re
-
-URL = "https://projetdmc.ew.r.appspot.com/api/timeline?user=user1"
-OUTPUT_FILE = "../out/post.csv"
-POST_LEVELS = [10, 100, 1000]
-N_REQUESTS = 200
-CONCURRENCY = 50
-
-def run_hey(n, c):
-    cmd = ["hey", "-t", "0", "-n", str(n), "-c", str(c), URL]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    out = result.stdout
-    match_time = re.search(r"Average:\s+([\d\.]+)\s*(ms|s|µs)", out)
-    avg = float(match_time.group(1)) * (1000 if match_time.group(2) == "s" else 1) if match_time else -1
-    match_fail = re.search(r"(\d+)\s+failed", out)
-    failed = int(match_fail.group(1)) if match_fail else 0
-    return avg, failed
-
-with open(OUTPUT_FILE, "w", newline="") as f:
-    writer = csv.writer(f)
-    writer.writerow(["POSTS_PER_USER", "AVG_TIME", "RUN", "FAILED"])
-    for posts in POST_LEVELS:
-        for run in range(1, 4):
-            avg, failed = run_hey(N_REQUESTS, CONCURRENCY)
-            writer.writerow([posts, avg, run, failed])
-```
-
-**Exemple de résultats :**
-
-| POSTS_PER_USER | AVG_TIME (ms) | RUN | FAILED |
-| -------------- | ------------- | --- | ------ |
-| 10             | 1843.7        | 1   | 0      |
-| 10             | 1408.8        | 2   | 0      |
-| 10             | 2008.2        | 3   | 0      |
-| 100            | 1703.3        | 1   | 0      |
-| 100            | 1354.3        | 2   | 0      |
-| 100            | 1661.0        | 3   | 0      |
-| 1000           | 1646.0        | 1   | 0      |
-| 1000           | 2188.0        | 2   | 0      |
-| 1000           | 1425.7        | 3   | 0      |
-
+## Analyse des performances
+Les timelines deviennent plus longues à lire, mais : pas d'échecs et sa scale.
 
 ![Temps moyen par requête selon le nb de post](out/barplot_post.png)
 ---
 
-### 10.2 Variation du nombre de followee
+### Variation du nombre de followee
 
 * Fixer le nombre de posts par utilisateur à 100.
 * Faire varier le nombre de followee : 10, 50, 100.
@@ -308,56 +152,15 @@ python deleteDS.py
 **Repeuplement :**
 
 ```bash
-python seed.py --users 101 --posts 100 --follows-min 100 --follows-max 100
+python seed.py --users 1000 --posts 100 --follows-min 20 --follows-max 20
 ```
 
-**Script de benchmark :**
-
-```python
-import subprocess
-import csv
-import re
-
-URL = "https://projetdmc.ew.r.appspot.com/api/timeline?user=user1"
-OUTPUT_FILE = "../out/fanout.csv"
-FANOUT_LEVELS = [10, 50, 100]
-N_REQUESTS = 200
-CONCURRENCY = 50
-
-def run_hey(n, c):
-    cmd = ["hey", "-t", "0", "-n", str(n), "-c", str(c), URL]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    out = result.stdout
-    match_time = re.search(r"Average:\s+([\d\.]+)\s*(ms|s|µs)", out)
-    avg = float(match_time.group(1)) * (1000 if match_time.group(2) == "s" else 1) if match_time else -1
-    match_fail = re.search(r"(\d+)\s+failed", out)
-    failed = int(match_fail.group(1)) if match_fail else 0
-    return avg, failed
-
-with open(OUTPUT_FILE, "w", newline="") as f:
-    writer = csv.writer(f)
-    writer.writerow(["FANOUT", "AVG_TIME", "RUN", "FAILED"])
-    for fanout in FANOUT_LEVELS:
-        for run in range(1, 3):
-            avg, failed = run_hey(N_REQUESTS, CONCURRENCY)
-            writer.writerow([fanout, avg, run, failed])
-```
-
-**Exemple de résultats :**
-
-| FANOUT | AVG_TIME (ms) | RUN | FAILED |
-| ------ | ------------- | --- | ------ |
-| 10     | 1688.4        | 1   | 0      |
-| 10     | 1315.8        | 2   | 0      |
-| 50     | 1475.0        | 1   | 0      |
-| 50     | 1441.9        | 2   | 0      |
-| 100    | 1812.7        | 1   | 0      |
-| 100    | 1658.2        | 2   | 0      |
-
+## Analyse des performances
+TinyInsta scale mal avec le nombre de followees.
 
 ![Temps moyen par requête selon le nb de post](out/barplot_fanout.png)
 
-## 11. Création de barplots
+## Création de barplots
 
 ```python
 import pandas as pd
