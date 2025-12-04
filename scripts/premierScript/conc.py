@@ -3,14 +3,14 @@ import csv
 import re
 import time
 
-# URL de ton application
+# URL de ton application (A FAIRE VARIER)
 URL = "https://projetdmc.ew.r.appspot.com/api/timeline?user=user1"
 
 # paramètres de concurrence à tester
 CONCURRENCY_LEVELS = [1, 10, 20, 50, 100, 1000]
 
 # nombre total de requêtes pour chaque test
-# N_REQUESTS = 500
+N_REQUESTS = 500
 
 # fichier de sortie
 OUTPUT_FILE = "../out/conc.csv"
@@ -67,7 +67,8 @@ def main():
         for c in CONCURRENCY_LEVELS:
             print(f"\n>>> Test concurrence c={c}")
 
-            n = c
+            # Ajuster le nombre total de requêtes pour chaque test
+            
 
             for run_number in range(1, 4):
                 print(f"    Run {run_number}/3 ...")

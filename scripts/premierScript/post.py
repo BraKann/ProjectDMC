@@ -8,8 +8,6 @@ URL = "https://projetdmc.ew.r.appspot.com/api/timeline?user=user1"
 OUTPUT_FILE = "../out/post.csv"
 
 POST_LEVELS = [10, 100, 1000]
-USERS = 21
-FOLLOWS = 20
 
 N_REQUESTS = 200
 CONCURRENCY = 50
